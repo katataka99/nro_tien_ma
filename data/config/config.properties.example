@@ -1,0 +1,40 @@
+#SERVER
+server.local=false
+server.test=false
+server.daoautoupdater=false
+server.sv=1
+server.name=Nro
+server.port=14445
+# server.sv1=Nro:160.250.246.84:14445:0,0,0
+server.sv1=Nro:127.0.0.1:14445:0,0,0
+server.waitlogin=5
+server.maxperip=4
+server.maxplayer=2000
+server.expserver=1
+server.debug=true
+
+# DATABASE
+database.driver=com.mysql.cj.jdbc.Driver
+database.host=localhost
+database.port=3306
+database.name=nro_tien_ma
+database.user=nro
+database.pass=CHANGE_ME
+database.pass=CHANGE_ME
+database.min=10
+database.max=30
+database.lifetime=300000
+
+# DASHBOARD AUTOGEN
+server.maintenance.hour=16
+server.maintenance.min=24
+server.autorestart=true
+
+# SỰ KIỆN
+event.lunar_new_year=1
+event.christmas=1
+event.halloween=1
+event.trung_thu=1
+event.hung_vuong=1
+event.top_sm=1
+event.top_nap=1

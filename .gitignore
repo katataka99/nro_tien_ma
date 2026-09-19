@@ -1,0 +1,10 @@
+data/config/config.properties
+logs/
+*.log
+server.pid
+out/
+._out/
+.idea/
+*.iml
+*.bak
+.env

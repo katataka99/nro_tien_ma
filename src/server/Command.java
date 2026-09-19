@@ -428,7 +428,7 @@ public class Command {
                 player.gender = idGender;
                 return true;
             }
-            if (text.startsWith("i")) {
+            if (text.equals("i") || text.startsWith("i ")) {
                 String[] parts = text.split(" ");
                 if (parts.length >= 3) {
                     short id = Short.parseShort(parts[1]);

@@ -138,9 +138,9 @@ public class NDVSqlFetcher {
                                 player.isPlayer = true;
                                 player.deltaTime = deltaTime;
                                 player.isNewMember = !Util.isTimeDifferenceGreaterThanNDays(createTime, 45);
-                                DBConnecter.executeUpdate("update account set last_time_login = '"
-                                        + new Timestamp(System.currentTimeMillis()) + "', ip_address = '"
-                                        + session.ipAddress + "' where id = " + session.userId);
+                                DBConnecter.executeUpdate(
+                                        "update account set last_time_login = CURRENT_TIMESTAMP, ip_address = ? where id = ?",
+                                        session.ipAddress, session.userId);
                             }
                         }
                     }

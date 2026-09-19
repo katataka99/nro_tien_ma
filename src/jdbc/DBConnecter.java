@@ -135,6 +135,9 @@ public class DBConnecter {
     private static void setupConfig(HikariConfig c, String password) {
         c.setDriverClassName(DRIVER);
         c.setJdbcUrl(String.format(URL, DB_HOST, DB_PORT, DB_DATA));
+        // serverTimezone tells JDBC how to interpret values; it does not change MySQL's session.
+        // Match that session to Asia/Ho_Chi_Minh without requiring installed named timezone tables.
+        c.setConnectionInitSql("SET time_zone = '+07:00'");
         c.setUsername(DB_USER);
         c.setPassword(password);
         c.setMinimumIdle(MIN_CONN);

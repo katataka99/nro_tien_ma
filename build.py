@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Compile Java 17 sources using the bundled JAR's dependencies, then update it."""
 from pathlib import Path
+import argparse
 import os
 import shutil
 import subprocess
@@ -10,11 +11,15 @@ import zipfile
 ROOT = Path(__file__).resolve().parent
 
 def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--output", type=Path, help="Write to another JAR while server.jar is running")
+    options = parser.parse_args()
     java_home = os.environ.get("JAVA_HOME")
     javac = str(Path(java_home) / "bin" / ("javac.exe" if os.name == "nt" else "javac")) if java_home else shutil.which("javac")
     if not javac:
         raise SystemExit("Install JDK 17 (or newer) to build.")
     jar = ROOT / "server.jar"
+    destination = options.output.resolve() if options.output else jar
     if not jar.exists():
         raise SystemExit("server.jar is required: it contains bundled third-party dependencies.")
     build = ROOT / "build"
@@ -42,8 +47,9 @@ def main():
                     new.writestr(entry, old.read(entry.filename))
             for name, path in updates.items():
                 new.write(path, name)
-        output.replace(jar)
-    print("Built server.jar for Java 17.")
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        output.replace(destination)
+    print("Built " + str(destination) + " for Java 17.")
 
 if __name__ == "__main__":
     main()

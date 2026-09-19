@@ -78,8 +78,8 @@ public class Client implements Runnable {
         if (session.joinedGame) {
             session.joinedGame = false;
             try {
-                DBConnecter.executeUpdate("update account set last_time_logout = ? where id = ?",
-                        new Timestamp(System.currentTimeMillis()), session.userId);
+                DBConnecter.executeUpdate("update account set last_time_logout = CURRENT_TIMESTAMP where id = ?",
+                        session.userId);
             } catch (Exception e) {
                 Logger.logException(Client.class, e);
             }

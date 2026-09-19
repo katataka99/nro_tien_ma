@@ -60,6 +60,23 @@ python3 build.py
 
 Build dung lib/ va dependencies dong goi san trong server.jar (network/EMTI); khong can NetBeans. Khong xoa JAR truoc khi build. Dau ra chi thay the sau khi compile thanh cong. Ant cung duoc ho tro neu co Python 3.
 
+Tren Windows, neu server dang khoa JAR, build rieng bang `python build.py --output build/server-fixed.jar`, dung server truoc khi copy JAR moi vao server.jar.
+
+## Sua loi cho dang nhap hang nghin giay
+
+Ket noi MySQL cua game dat session time_zone=+07:00 de khop JDBC; thoi gian login/logout duoc ghi bang CURRENT_TIMESTAMP cua database. Khong doi timezone global cua MySQL hay Windows. Cach xu ly nay phu hop voi [huong dan Connector/J](https://dev.mysql.com/doc/connector-j/en/connector-j-time-instants.html).
+
+Ban cu co the da ghi timestamp trong tuong lai. Sau khi dung server cu, chi reset tai khoan bi anh huong trong Navicat (thay TEN_TAI_KHOAN), roi khoi dong bang JAR moi:
+
+```sql
+UPDATE nro_tien_ma.account
+SET last_time_login = NOW() - INTERVAL 1 MINUTE,
+    last_time_logout = NOW() - INTERVAL 1 MINUTE
+WHERE username = 'TEN_TAI_KHOAN';
+```
+
+Regression test `tests/LoginTimeZoneTest.java` dung bang TEMPORARY, can database thu nghiem rieng trong config. Da chay voi MySQL default UTC va JVM o UTC, Asia/Taipei, Asia/Ho_Chi_Minh; tat ca deu doc timestamp dung epoch.
+
 Cap nhat JAR tu GitHub:
 
 ```bash

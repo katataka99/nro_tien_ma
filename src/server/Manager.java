@@ -245,7 +245,7 @@ public final class Manager {
         } catch (IOException ex) {
             Logger.logException(Manager.class,
                     ex, "Lỗi load properites");
-            System.exit(0);
+            System.exit(1);
         }
         // ImageUtil.initImage();
         this.loadDatabase();
@@ -1106,7 +1106,7 @@ public final class Manager {
         } catch (Exception e) {
             Logger.logException(Manager.class,
                     e, "Database loading error");
-            System.exit(0);
+            System.exit(1);
         } finally {
             try {
                 if (rs != null) {

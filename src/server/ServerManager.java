@@ -7,7 +7,6 @@ import boss.BossManager;
  *
  * @author EMTI
  */
-import EMTI.FileRunner;
 import EMTI.Functions;
 import minigame.DecisionMaker.DecisionMaker;
 import minigame.LuckyNumber.LuckyNumber;
@@ -67,7 +66,8 @@ public class ServerManager {
 
     private static ServerManager instance;
 
-    public static boolean isRunning;
+    public static volatile boolean isRunning;
+    private boolean shutdownComplete;
 
     public void init() {
         Manager.gI();
@@ -90,7 +90,9 @@ public class ServerManager {
                 + "  => writing " + (consts.cn.readInt ? "INT (4 bytes)" : "LONG (8 bytes)"));
         System.out.println("[STAT MODE] Client ModFunc.isReadInt PHAI KHOP voi cai tren!");
         System.out.println("=====================================================");
-         ServerManager.gI().run();
+        ServerManager manager = ServerManager.gI();
+        Runtime.getRuntime().addShutdownHook(new Thread(manager::shutdown, "Server shutdown"));
+        manager.run();
 //        new server.ui.ServerManagerUI().setVisible(true);
     }
 
@@ -196,6 +198,7 @@ public class ServerManager {
         } catch (Throwable t) {
             System.err.println("CRITICAL ERROR IN ServerManager.run:");
             t.printStackTrace();
+            System.exit(1);
         }
     }
 
@@ -308,7 +311,7 @@ public class ServerManager {
     private void activeCommandLine() {
         new Thread(() -> {
             Scanner sc = new Scanner(System.in);
-            while (true) {
+            while (sc.hasNextLine()) {
                 String line = sc.nextLine();
                 if (line.equals("baotri")) {
                     new Thread(() -> {
@@ -358,7 +361,20 @@ public class ServerManager {
     }
 
     public void close() {
+        shutdown();
+        System.exit(0);
+    }
+
+    // Used by SIGTERM/systemd and in-game maintenance. Never exit from a JVM hook.
+    private synchronized void shutdown() {
+        if (shutdownComplete) {
+            return;
+        }
+        shutdownComplete = true;
         isRunning = false;
+        // Close the listener without re-entering System.exit from its callback.
+        Network.gI().setDoSomeThingWhenClose(() -> {});
+        Network.gI().close();
         try {
             ClanService.gI().close();
         } catch (Exception e) {
@@ -369,8 +385,16 @@ public class ServerManager {
         } catch (Exception e) {
             Logger.error("Lỗi save shop ký gửi!\n");
         }
-        Client.gI().close();
-        EventDAO.save();
+        try {
+            Client.gI().close();
+        } catch (Exception e) {
+            Logger.error("Failed to save/disconnect players: " + e + "\n");
+        }
+        try {
+            EventDAO.save();
+        } catch (Exception e) {
+            Logger.error("Failed to save events: " + e + "\n");
+        }
 
         // === Đảm bảo mọi tác vụ DB async được hoàn tất trước khi tắt ===
         try {
@@ -382,14 +406,6 @@ public class ServerManager {
 
         Logger.success("SUCCESSFULLY MAINTENANCE!\n");
 
-        // if (AutoMaintenance.isRunning) {
-        // AutoMaintenance.isRunning = false;
-        try {
-            String batchFilePath = "restart.bat";
-            FileRunner.runBatchFile(batchFilePath);
-        } catch (IOException e) {
-        }
-        // }
-        System.exit(0);
+        jdbc.DBConnecter.close();
     }
 }

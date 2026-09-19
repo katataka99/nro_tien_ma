@@ -1,19 +1,87 @@
-# NRO Tien Ma server
+# NRO Tien Ma — VPS Linux
 
-Java game server. The bundled server.jar targets Java 17.
+Java 17+, MySQL, TCP **14445**. Repo chi chua server; client Unity build rieng.
 
-## VPS startup
+## Cai moi tren Ubuntu 26.04 (RAM 8 GB)
 
-1. Install Java 17 and MySQL.
-2. Create the database and a dedicated database user. Review the SQL dumps and apply the migrations required by your version. Account/player data and runtime logs have been removed from these dumps.
-3. Copy `data/config/config.properties.example` to `data/config/config.properties`; set database credentials and the public server address.
-4. Allow inbound TCP port 14445 (or the configured port).
-5. From the repository directory, run `bash run.sh` and inspect `logs/server.log`.
+Chay bang root hoac them sudo. Neu VPS da co MySQL/MariaDB, giu dich vu hien tai va bo qua buoc cai mysql-server.
 
-Keep MySQL private. Configure the client separately to connect to the VPS.
+```bash
+apt update
+apt install -y git python3 openjdk-17-jdk-headless mysql-client
+# Chi cai neu VPS CHUA co MySQL/MariaDB:
+apt install -y mysql-server
 
-## Build status
+git clone https://github.com/katataka99/nro_tien_ma.git /opt/nro_tien_ma
+cd /opt/nro_tien_ma
+bash deploy/setup-database.sh
+bash deploy/install-service.sh
+systemctl start nro-tien-ma
+journalctl -u nro-tien-ma -n 100 --no-pager
+```
 
-The existing Ant build.xml references missing nbproject/build-impl.xml. Rebuilding from source requires restoring or replacing that build setup. The included JAR retains the original compiled code, with its embedded SQL dump sanitized; its correspondence to the latest source and successful startup have not been verified.
+Setup database hoi IP public/domain VPS, import **sql/new.sql**, tao user `nro_game` voi mat khau ngau nhien va ghi config rieng. Script can `mysql -u root` dang nhap qua Unix socket. Neu root can mat khau, dung huong dan thu cong ben duoi. Script tu choi neu database `nro_tien_ma`, user `nro_game` hoac config da ton tai. Neu import loi, database co the da tao mot phan: kiem tra loi truoc khi thu lai.
 
-This repository is a clean export. Local database credentials, IDE files, build output folders, and the original Git history are not included.
+Dump da co cot player.data_tutien va bang luyen dan. Khong import tat ca dump/migration lien tiep: migration la lich su cho database cu. Tai khoan/player da duoc loai khoi dump; cai moi khong co tai khoan dang nhap san.
+
+Mo TCP 14445 trong firewall nha cung cap VPS. Neu UFW dang bat: `ufw allow 14445/tcp`. Giu MySQL trong mang rieng. Sua dia chi server trong client sang VPS.
+
+## Quan ly
+
+```bash
+systemctl status nro-tien-ma --no-pager
+journalctl -u nro-tien-ma -f
+systemctl stop nro-tien-ma
+systemctl restart nro-tien-ma
+ss -ltnp 'sport = :14445'
+```
+
+systemd tu khoi dong sau reboot/thoat process; systemctl stop dung han. SIGTERM dong socket, luu player/clan/event va doi DB write dang chay toi da 60 giay. Service cho toi da 120 giay. Loi database/config tra exit code 1. Sau 5 lan loi trong 5 phut, sua nguyen nhan roi chay `systemctl reset-failed nro-tien-ma` va start lai.
+
+Heap mac dinh 256 MB–2 GB, chua tinh native memory/threads/MySQL. Sua `/etc/default/nro-tien-ma` (JAVA_BIN, JAVA_XMS, JAVA_XMX) roi restart. Installer chon Java 17 rieng neu co. Chi quan ly dich vu nro-tien-ma de khong anh huong cac game Java khac.
+
+`bash run.sh` chay foreground de chan doan; khong chay dong thoi voi service tren cung port. Cac khoa lich bao tri dashboard khong kich hoat lich GUI khi chay headless.
+
+## Database/config thu cong hoac database da co
+
+Backup database truoc khi nang cap. Khong import dump cai moi len database co player.
+
+Voi cai moi: `mysql -u root -p < sql/new.sql`, tao user rieng co quyen SELECT, INSERT, UPDATE, DELETE tren nro_tien_ma.*. Copy data/config/config.properties.example thanh data/config/config.properties, sua database.host/port/name/user/pass va server.sv1 (IP/domain VPS). Khong commit config that. Mat khau Java properties can escape backslash neu co.
+
+Neu doi port, sua server.port, server.sv1, firewall va client. Sau khi config xong: `bash deploy/install-service.sh`.
+
+## Build va cap nhat
+
+JAR da build lai tu source. Build can JDK 17+ va Python 3:
+
+```bash
+python3 build.py
+```
+
+Build dung lib/ va dependencies dong goi san trong server.jar (network/EMTI); khong can NetBeans. Khong xoa JAR truoc khi build. Dau ra chi thay the sau khi compile thanh cong. Ant cung duoc ho tro neu co Python 3.
+
+Cap nhat JAR tu GitHub:
+
+```bash
+cd /opt/nro_tien_ma
+systemctl stop nro-tien-ma
+git pull --ff-only
+systemctl start nro-tien-ma
+```
+
+Neu tu build, server.jar se la thay doi local: luu ban build rieng va xu ly thay doi truoc khi pull; giu nguyen config/database.
+
+## Kiem tra
+
+```bash
+mkdir -p build/test-classes
+javac --release 17 -proc:none -cp 'lib/*:server.jar' -d build/test-classes tests/AsyncFlushTest.java
+java -cp 'build/test-classes:lib/*:server.jar' AsyncFlushTest
+bash -n run.sh
+bash -n deploy/install-service.sh
+bash -n deploy/setup-database.sh
+```
+
+Da kiem tra compile Java 17, import SQL tren MySQL 8.0, server headless khoi dong/mo socket, EOF console va flush doi DB write dang chay. systemd tren VPS va ket noi client thuc te can xac nhan tren may dich.
+
+Ubuntu packages: [Java 17](https://packages.ubuntu.com/resolute/openjdk-17-jdk), [MySQL](https://packages.ubuntu.com/resolute/mysql-server).

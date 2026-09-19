@@ -60,11 +60,11 @@ public class DbAsyncTask {
         if (backlog > WARN_BACKLOG_SIZE) {
             Logger.warning("[DbAsyncTask] Backlog cao: " + backlog + " tasks. Server có thể đang quá tải!\n");
         }
+        enqueuedCount.incrementAndGet();
         boolean offered = queue.offer(task);
         if (!offered) {
+            enqueuedCount.decrementAndGet();
             Logger.warning("[DbAsyncTask] Queue đầy! Task bị bỏ qua. Cần tăng QUEUE_CAPACITY.\n");
-        } else {
-            enqueuedCount.incrementAndGet();
         }
     }
 
@@ -75,7 +75,7 @@ public class DbAsyncTask {
     public void forceFlush() {
         Logger.warning("[DbAsyncTask] Đang flush hàng đợi DB (" + queue.size() + " tasks)...\n");
         long deadline = System.currentTimeMillis() + 60_000;
-        while (!queue.isEmpty() && System.currentTimeMillis() < deadline) {
+        while (enqueuedCount.get() > 0 && System.currentTimeMillis() < deadline) {
             try {
                 Thread.sleep(100);
             } catch (InterruptedException e) {
@@ -83,7 +83,11 @@ public class DbAsyncTask {
                 break;
             }
         }
-        Logger.success("[DbAsyncTask] Flush hoàn tất.\n");
+        if (enqueuedCount.get() > 0) {
+            Logger.warning("[DbAsyncTask] Flush timed out with " + enqueuedCount.get() + " pending tasks.\n");
+        } else {
+            Logger.success("[DbAsyncTask] Flush hoàn tất.\n");
+        }
     }
 
     /**
@@ -118,6 +122,8 @@ public class DbAsyncTask {
                         task.run();
                     } catch (Exception e) {
                         Logger.logException(DbAsyncTask.class, e, "Lỗi thực thi DB task");
+                    } finally {
+                        enqueuedCount.decrementAndGet();
                     }
                 }
             } catch (InterruptedException e) {

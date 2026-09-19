@@ -199,7 +199,7 @@ public class DBConnecter {
             String msg = e.getMessage() != null ? e.getMessage() : e.toString();
             Logger.log(" [4;31m", "Lỗi kết nối database: " + msg + "\n");
             Logger.log(" [4;31m", "KHÔNG THỂ KẾT NỐI DATABASE! Vui lòng kiểm tra lại cấu hình SQL hoặc MySQL (XAMPP) đã bật chưa.\n");
-            System.exit(0);
+            System.exit(1);
         }
         ds = tempDs;
     }

@@ -8,3 +8,5 @@ out/
 *.iml
 *.bak
 .env
+build/
+__pycache__/

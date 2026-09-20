@@ -136,6 +136,8 @@ public class Command {
                 }
                 Service.gI().sendThongBao(player, "Bất tử" + (player.isBattu ? ": ON" : ": OFF"));
                 return true;
+            } else if (text.equalsIgnoreCase("td") || text.toLowerCase().startsWith("td ")) {
+                return buffTienDuyen(player, text);
             } else if (text.startsWith("tutien ")) {
                 // admin test: tutien tv <n> | tutien nam <±n> | tutien hoanhon | tutien reset
                 String arg = text.substring(7).trim();
@@ -534,6 +536,76 @@ public class Command {
                 case "dung", "stop", "thoi" -> {
                     player.clone.setAttackMode(false);
                     Service.gI().sendThongBao(player, "Phân thân đã dừng tấn công!");
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    private boolean buffTienDuyen(Player admin, String command) {
+        String[] args = command.trim().split("\\s+");
+        if (args.length != 3) {
+            Service.gI().sendThongBaoOK(admin, "Cú pháp: td <ID player> <số lượng>");
+            return true;
+        }
+
+        try {
+            long playerId = Long.parseLong(args[1]);
+            int quantity = Integer.parseInt(args[2]);
+            if (playerId <= 0 || quantity <= 0 || quantity > 9999) {
+                Service.gI().sendThongBaoOK(admin,
+                        "ID phải lớn hơn 0; số lượng Tiên Duyên từ 1 đến 9.999.");
+                return true;
+            }
+
+            Player receiver = Client.gI().getPlayer(playerId);
+            if (receiver == null) {
+                Service.gI().sendThongBaoOK(admin,
+                        "Không tìm thấy player ID " + playerId + " đang online.");
+                return true;
+            }
+
+            Item item = ItemService.gI().createNewItem(tutien.TuTienService.ITEM_TIEN_DUYEN, quantity);
+            if (item == null || item.template == null) {
+                Service.gI().sendThongBaoOK(admin,
+                        "Chưa có item Tiên Duyên 2040. Hãy chạy migration_m9_tien_duyen.sql.");
+                return true;
+            }
+            if (item.itemOptions.isEmpty()) {
+                item.itemOptions.add(new Item.ItemOption(73, 0));
+            }
+            if (!hasBagCapacity(receiver, item)) {
+                Service.gI().sendThongBaoOK(admin,
+                        "Hành trang của " + receiver.name + " không đủ chỗ nhận " + quantity + " Tiên Duyên.");
+                return true;
+            }
+            if (!InventoryService.gI().addItemBag(receiver, item)) {
+                Service.gI().sendThongBaoOK(admin, "Không thể thêm Tiên Duyên vào hành trang người chơi.");
+                return true;
+            }
+
+            InventoryService.gI().sendItemBag(receiver);
+            Service.gI().sendThongBaoOK(receiver,
+                    "Bạn được admin cộng " + quantity + " Tiên Duyên.");
+            Service.gI().sendThongBaoOK(admin,
+                    "Đã buff " + quantity + " Tiên Duyên cho " + receiver.name + " [ID " + playerId + "].");
+        } catch (NumberFormatException e) {
+            Service.gI().sendThongBaoOK(admin, "ID player và số lượng phải là số nguyên hợp lệ.");
+        }
+        return true;
+    }
+
+    private boolean hasBagCapacity(Player receiver, Item itemToAdd) {
+        int remaining = itemToAdd.quantity;
+        for (Item item : receiver.inventory.itemsBag) {
+            if (!item.isNotNullItem()) {
+                return true;
+            }
+            if (item.template.id == itemToAdd.template.id
+                    && InventoryService.checkListsEqual(item.itemOptions, itemToAdd.itemOptions)) {
+                remaining -= Math.max(0, 9999 - item.quantity);
+                if (remaining <= 0) {
                     return true;
                 }
             }

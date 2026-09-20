@@ -1982,23 +1982,17 @@ public class Service {
             session.version = Integer.parseInt(arrPlatform[1].replaceAll("\\.", ""));
             
             // Xử lý Device ID (Chống Clone / Botnet) mới thêm từ C# Client
-            if (arrPlatform.length >= 3) {
-                session.deviceId = arrPlatform[2];
-            } else {
-                session.deviceId = "UNKNOWN_DEVICE";
-            }
+            String deviceId = arrPlatform.length >= 3 ? arrPlatform[2] : "UNKNOWN_DEVICE";
             
             // Áp dụng Firewall theo Device ID (Không quan tâm IP, diệt tận gốc việc dùng Proxy/VPN)
-            if (!session.deviceId.equals("UNKNOWN_DEVICE")) {
-                if (network.server.EMTIServer.deviceFirewall.containsKey(session.deviceId) 
-                    && network.server.EMTIServer.deviceFirewall.get(session.deviceId).intValue() >= network.server.EMTIServer.maxConnectionsPerDevice) {
+            if (!deviceId.equals("UNKNOWN_DEVICE")) {
+                if (!session.acquireDeviceSlot(deviceId)) {
                     session.disconnect();
-                    utils.Logger.warning("Chặn bắt thiết bị đang clone quá " + network.server.EMTIServer.maxConnectionsPerDevice + " acc: " + session.deviceId + "\n");
+                    utils.Logger.warning("Chặn bắt thiết bị đang clone quá " + network.server.EMTIServer.maxConnectionsPerDevice + " acc: " + deviceId + "\n");
                     return;
                 }
-                
-                int value = network.server.EMTIServer.deviceFirewall.getOrDefault(session.deviceId, 0);
-                network.server.EMTIServer.deviceFirewall.put(session.deviceId, value + 1);
+            } else {
+                session.deviceId = deviceId;
             }
             
         } catch (Exception e) {

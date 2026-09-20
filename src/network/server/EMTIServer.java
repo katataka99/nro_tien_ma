@@ -83,6 +83,30 @@ import java.util.concurrent.atomic.AtomicBoolean;
         firewall.computeIfPresent(ip, (key, current) -> current <= 1 ? null : current - 1);
     }
 
+    public static boolean acquireDeviceSlot(String deviceId) {
+        if (deviceId == null || deviceId.equals("UNKNOWN_DEVICE")) {
+            return true;
+        }
+        AtomicBoolean acquired = new AtomicBoolean(false);
+        deviceFirewall.compute(deviceId, (key, current) -> {
+            int count = current == null ? 0 : current;
+            if (count >= maxConnectionsPerDevice) {
+                return count;
+            }
+            acquired.set(true);
+            return count + 1;
+        });
+        return acquired.get();
+    }
+
+    public static void releaseDeviceSlot(String deviceId) {
+        if (deviceId == null || deviceId.equals("UNKNOWN_DEVICE")) {
+            return;
+        }
+        deviceFirewall.computeIfPresent(deviceId,
+                (key, current) -> current <= 1 ? null : current - 1);
+    }
+
     public static boolean allowDataDownload(String ip) {
         long now = System.currentTimeMillis();
         AtomicBoolean allowed = new AtomicBoolean(false);

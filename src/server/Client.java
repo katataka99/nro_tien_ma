@@ -84,7 +84,6 @@ public class Client implements Runnable {
                 Logger.logException(Client.class, e);
             }
         }
-        ServerManager.gI().disconnect(session);
     }
 
     private void remove(Player player) {

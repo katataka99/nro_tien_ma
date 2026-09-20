@@ -60,7 +60,7 @@ public class ServerManager {
 
     public static String timeStart;
 
-    public static final ConcurrentHashMap<String, Integer> CLIENTS = new ConcurrentHashMap<>();
+    private static final ConcurrentHashMap<String, Integer> CLIENTS_BY_IP = new ConcurrentHashMap<>();
 
     public static String NAME = "Local";
     public static String IP = "127.0.0.1";
@@ -209,8 +209,11 @@ public class ServerManager {
             Network.gI().init().setAcceptHandler(new ISessionAcceptHandler() {
                 @Override
                 public void sessionInit(ISession is) {
-                    if (!canConnectWithIp(is.getIP())) {
-                        is.disconnect();
+                    MySession session = (MySession) is;
+                    if (!session.acquireIpSlot()) {
+                        Logger.warning("[Anti-Clone] Blocked IP: " + session.ipAddress
+                                + " - Đã đạt " + Manager.MAX_PER_IP + " kết nối!\n");
+                        session.disconnect();
                         return;
                     }
                     is.setMessageHandler(Controller.gI())
@@ -284,17 +287,32 @@ public class ServerManager {
         }
     }
 
-    private boolean canConnectWithIp(String ipAddress) {
+    public static boolean tryAcquireClientIpSlot(String ipAddress) {
+        if (ipAddress == null) {
+            return false;
+        }
         AtomicBoolean accepted = new AtomicBoolean(false);
-        CLIENTS.compute(ipAddress, (ip, current) -> {
+        CLIENTS_BY_IP.compute(ipAddress, (ip, current) -> {
             int count = current == null ? 0 : current;
-            if (count >= Manager.MAX_PER_IP) {
+            if (count >= Math.max(1, Manager.MAX_PER_IP)) {
                 return count;
             }
             accepted.set(true);
             return count + 1;
         });
         return accepted.get();
+    }
+
+    public static void releaseClientIpSlot(String ipAddress) {
+        if (ipAddress == null) {
+            return;
+        }
+        CLIENTS_BY_IP.computeIfPresent(ipAddress,
+                (ip, current) -> current <= 1 ? null : current - 1);
+    }
+
+    public static int getClientIpSlotCount(String ipAddress) {
+        return CLIENTS_BY_IP.getOrDefault(ipAddress, 0);
     }
 
     private void activeCommandLine() {
@@ -335,13 +353,6 @@ public class ServerManager {
                 }
             }
         }, "Active line").start();
-    }
-
-    public void disconnect(MySession session) {
-        String ip = session.getIP();
-        if (ip != null) {
-            CLIENTS.computeIfPresent(ip, (key, current) -> current <= 1 ? null : current - 1);
-        }
     }
 
     public void close() {

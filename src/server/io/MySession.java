@@ -42,6 +42,8 @@ public class MySession extends Session {
 
     public String ipAddress;
     public String deviceId;
+    private boolean ipSlotAcquired;
+    private boolean deviceSlotAcquired;
     public boolean isAdmin;
     public int userId;
     public String uu;
@@ -175,18 +177,36 @@ public class MySession extends Session {
         }
     }
 
+    public synchronized boolean acquireDeviceSlot(String newDeviceId) {
+        if (this.deviceSlotAcquired) {
+            return this.deviceId.equals(newDeviceId);
+        }
+        this.deviceId = newDeviceId;
+        if (newDeviceId == null || newDeviceId.equals("UNKNOWN_DEVICE")) {
+            return true;
+        }
+        this.deviceSlotAcquired = network.server.EMTIServer.acquireDeviceSlot(newDeviceId);
+        return this.deviceSlotAcquired;
+    }
+
+    public synchronized boolean acquireIpSlot() {
+        if (this.ipSlotAcquired) {
+            return true;
+        }
+        this.ipSlotAcquired = server.ServerManager.tryAcquireClientIpSlot(this.ipAddress);
+        return this.ipSlotAcquired;
+    }
+
     @Override
-    public void disconnect() {
+    public synchronized void disconnect() {
+        if (this.ipSlotAcquired) {
+            this.ipSlotAcquired = false;
+            server.ServerManager.releaseClientIpSlot(this.ipAddress);
+        }
         super.disconnect();
-        if (this.deviceId != null && !this.deviceId.equals("UNKNOWN_DEVICE")) {
-            if (network.server.EMTIServer.deviceFirewall.containsKey(this.deviceId)) {
-                int devCount = network.server.EMTIServer.deviceFirewall.get(this.deviceId);
-                if (devCount > 0) {
-                    network.server.EMTIServer.deviceFirewall.put(this.deviceId, devCount - 1);
-                } else {
-                    network.server.EMTIServer.deviceFirewall.remove(this.deviceId);
-                }
-            }
+        if (this.deviceSlotAcquired) {
+            this.deviceSlotAcquired = false;
+            network.server.EMTIServer.releaseDeviceSlot(this.deviceId);
         }
     }
 }

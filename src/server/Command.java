@@ -57,6 +57,10 @@ public class Command {
     }
 
     public boolean check(Player player, String text) {
+        if (text.equalsIgnoreCase("id")) {
+            Service.gI().sendThongBao(player, "ID nhân vật của bạn: " + player.id);
+            return true;
+        }
         if (text.equalsIgnoreCase("tutien")) {
             // mo panel; tu gate "gap Quy Lao" neu chua kich hoat
             tutien.TuTienService.gI().handleAction(player, 0);

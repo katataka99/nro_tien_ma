@@ -10,7 +10,8 @@ import network.session.ISession;
 /*     */ import java.io.IOException;
 /*     */ import java.net.ServerSocket;
 /*     */ import java.net.Socket;
-import java.util.HashMap;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 /*     */ import java.util.logging.Level;
 /*     */ import java.util.logging.Logger;
 
@@ -53,11 +54,51 @@ import java.util.HashMap;
         this.sessionClone = Session.class;
     }
 
-    public static HashMap<String, Integer> firewall = new HashMap<>();
-    public static HashMap<String, Integer> deviceFirewall = new HashMap<>();
-    public static HashMap<String, Integer> firewallDownDataGame = new HashMap<>();
+    public static final ConcurrentHashMap<String, Integer> firewall = new ConcurrentHashMap<>();
+    public static final ConcurrentHashMap<String, Integer> deviceFirewall = new ConcurrentHashMap<>();
+    public static final ConcurrentHashMap<String, Integer> firewallDownDataGame = new ConcurrentHashMap<>();
+    private static final ConcurrentHashMap<String, Long> dataDownloadWindowStartedAt = new ConcurrentHashMap<>();
     public static int maxConnectionsPerIp = 5;
     public static int maxConnectionsPerDevice = 5;
+    private static final int MAX_DATA_DOWNLOAD_REQUESTS_PER_WINDOW = 22;
+    private static final long DATA_DOWNLOAD_WINDOW_MS = 60_000L;
+
+    private static boolean acquireIpSlot(String ip) {
+        AtomicBoolean acquired = new AtomicBoolean(false);
+        firewall.compute(ip, (key, current) -> {
+            int count = current == null ? 0 : current;
+            if (count >= maxConnectionsPerIp) {
+                return count;
+            }
+            acquired.set(true);
+            return count + 1;
+        });
+        return acquired.get();
+    }
+
+    public static void releaseIpSlot(String ip) {
+        if (ip == null) {
+            return;
+        }
+        firewall.computeIfPresent(ip, (key, current) -> current <= 1 ? null : current - 1);
+    }
+
+    public static boolean allowDataDownload(String ip) {
+        long now = System.currentTimeMillis();
+        AtomicBoolean allowed = new AtomicBoolean(false);
+        firewallDownDataGame.compute(ip, (key, current) -> {
+            Long startedAt = dataDownloadWindowStartedAt.get(key);
+            if (current == null || startedAt == null || now - startedAt >= DATA_DOWNLOAD_WINDOW_MS) {
+                dataDownloadWindowStartedAt.put(key, now);
+                allowed.set(true);
+                return 1;
+            }
+            int next = current + 1;
+            allowed.set(next <= MAX_DATA_DOWNLOAD_REQUESTS_PER_WINDOW);
+            return next;
+        });
+        return allowed.get();
+    }
 
     /*     */
     /*     */
@@ -192,21 +233,24 @@ import java.util.HashMap;
                     continue;
                 }
 
-                // === Layer 2: Firewall - Giới hạn kết nối đồng thời trên cùng IP ===
-                // Giới hạn max 5 account/kết nối trên mỗi IP (Chống treo bot/clone)
-                int maxConnectionsPerIp = 5;
-                if (firewall.containsKey(ip) && firewall.get(ip).intValue() >= maxConnectionsPerIp) {
+                // Reserve the IP slot before starting the session threads. If a client
+                // disconnects during initialization, Session.disconnect() releases the
+                // same slot instead of leaving a stale counter behind.
+                if (!acquireIpSlot(ip)) {
                     System.out.println("[Anti-Clone] Blocked IP: " + ip + " - Đã đạt " + maxConnectionsPerIp + " kết nối!");
                     socket.close();
                 } else {
-                    ISession session = SessionFactory.gI().cloneSession(this.sessionClone, socket);
-                    this.acceptHandler.sessionInit(session);
-                    EmtiSessionManager.gI().putSession(session);
-                    if (firewall.containsKey(ip)) {
-                        int value = firewall.get(ip).intValue();
-                        firewall.put(ip, value += 1);
-                    } else {
-                        firewall.put(ip, 1);
+                    try {
+                        ISession session = SessionFactory.gI().cloneSession(this.sessionClone, socket);
+                        this.acceptHandler.sessionInit(session);
+                        EmtiSessionManager.gI().putSession(session);
+                    } catch (Exception ex) {
+                        releaseIpSlot(ip);
+                        try {
+                            socket.close();
+                        } catch (IOException ignored) {
+                        }
+                        throw ex;
                     }
                 }
             } catch (IOException ex) {

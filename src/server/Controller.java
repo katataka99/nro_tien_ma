@@ -475,19 +475,10 @@ public class Controller implements IMessageHandler {
 
                     String ip = _session.ipAddress;
                     Logger.warning("ip " + ip + " đang tải dữ liệu\n");
-                    if (network.server.EMTIServer.firewallDownDataGame.containsKey(ip)) {
-                        int soLanConnect = network.server.EMTIServer.firewallDownDataGame.get(ip).intValue();
-                        if (soLanConnect > 21) {
-                            Service.gI().sendThongBaoOK(_session,
-                                    "Bạn đã tải dữ liệu nhiều lần, đợi bảo trì rồi quay lại");
-                            return;
-                        } else {
-                            network.server.EMTIServer.firewallDownDataGame.put(ip, soLanConnect += 1);
-                        }
-
-                    } else {
-
-                        network.server.EMTIServer.firewallDownDataGame.put(ip, 1);
+                    if (!network.server.EMTIServer.allowDataDownload(ip)) {
+                        Service.gI().sendThongBaoOK(_session,
+                                "Bạn đã tải dữ liệu nhiều lần, vui lòng đợi 1 phút rồi thử lại");
+                        return;
                     }
                     byte type = _msg.reader().readByte();
                     if (type == 1) {

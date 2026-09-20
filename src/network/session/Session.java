@@ -230,14 +230,7 @@ public class Session
         if (this.socket != null) {
             try {
                 String ip = socket.getInetAddress().getHostAddress();
-                if (EMTIServer.firewall.containsKey(ip)) {
-                    int count = EMTIServer.firewall.get(ip);
-                    if (count > 0) {
-                        EMTIServer.firewall.put(ip, count - 1);
-                    } else {
-                        EMTIServer.firewall.remove(ip);
-                    }
-                }
+                EMTIServer.releaseIpSlot(ip);
 
                 this.socket.close();
             } catch (IOException ex) {

@@ -40,6 +40,8 @@ import utils.Logger;
 import utils.TimeUtil;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import models.The23rdMartialArtCongress.The23rdMartialArtCongressManager;
 import models.DeathOrAliveArena.DeathOrAliveArenaManager;
@@ -58,7 +60,7 @@ public class ServerManager {
 
     public static String timeStart;
 
-    public static final Map CLIENTS = new HashMap();
+    public static final ConcurrentHashMap<String, Integer> CLIENTS = new ConcurrentHashMap<>();
 
     public static String NAME = "Local";
     public static String IP = "127.0.0.1";
@@ -265,15 +267,6 @@ public class ServerManager {
 
                 @Override
                 public void sessionDisconnect(ISession session) {
-                    String ip = session.getIP();
-                    if (CLIENTS.containsKey(ip)) {
-                        int n = Integer.parseInt(String.valueOf(CLIENTS.get(ip)));
-                        if (n > 1) {
-                            CLIENTS.put(ip, n - 1);
-                        } else {
-                            CLIENTS.remove(ip);
-                        }
-                    }
                     Client.gI().kickSession((MySession) session);
                 }
             }).setTypeSessioClone(MySession.class)
@@ -292,20 +285,16 @@ public class ServerManager {
     }
 
     private boolean canConnectWithIp(String ipAddress) {
-        Object o = CLIENTS.get(ipAddress);
-        if (o == null) {
-            CLIENTS.put(ipAddress, 1);
-            return true;
-        } else {
-            int n = Integer.parseInt(String.valueOf(o));
-            if (n < Manager.MAX_PER_IP) {
-                n++;
-                CLIENTS.put(ipAddress, n);
-                return true;
-            } else {
-                return false;
+        AtomicBoolean accepted = new AtomicBoolean(false);
+        CLIENTS.compute(ipAddress, (ip, current) -> {
+            int count = current == null ? 0 : current;
+            if (count >= Manager.MAX_PER_IP) {
+                return count;
             }
-        }
+            accepted.set(true);
+            return count + 1;
+        });
+        return accepted.get();
     }
 
     private void activeCommandLine() {
@@ -349,14 +338,9 @@ public class ServerManager {
     }
 
     public void disconnect(MySession session) {
-        Object o = CLIENTS.get(session.getIP());
-        if (o != null) {
-            int n = Integer.parseInt(String.valueOf(o));
-            n--;
-            if (n < 0) {
-                n = 0;
-            }
-            CLIENTS.put(session.getIP(), n);
+        String ip = session.getIP();
+        if (ip != null) {
+            CLIENTS.computeIfPresent(ip, (key, current) -> current <= 1 ? null : current - 1);
         }
     }
 

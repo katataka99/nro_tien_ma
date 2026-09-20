@@ -710,7 +710,7 @@ public class Boss extends Player implements IBoss, IBossOutfit {
                     this.zone.map.yPhysicInTop(this.location.x, this.location.y - 24), plKill.id);
             services.Service.gI().dropItemMap(this.zone, lt);
         }
-        // M9 Tu Tien: MOI boss co ty le roi Tien Duyen (item 2039, 1/20), moi proc 1-3 vien
+        // M9 Tu Tien: MOI boss co ty le roi Tien Duyen (item 2040, 1/20), moi proc 1-3 vien
         if (plKill != null) {
             tutien.TuTienService.gI().rollDropTienDuyen(this.zone, this.location.x, this.location.y,
                     plKill.id, tutien.TuTienService.TIEN_DUYEN_BOSS_DROP_1_IN);

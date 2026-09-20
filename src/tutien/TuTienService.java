@@ -153,8 +153,9 @@ public class TuTienService {
     public static final int DAN_QTY_STEP_MIN = 3, DAN_QTY_STEP_MAX = 95;
 
     // ── M9: Tien Duyen (gating) + chi phi Linh Thach (dot pha / luyen dan) ───────
-    // Tien Duyen = item 2039 (tien te MO KHOA), roi tu quai 1/1000 & boss 1/20, moi proc 1-3 vien.
-    public static final short ITEM_TIEN_DUYEN = 2039;
+    // Tien Duyen = item 2040 (tien te MO KHOA), roi tu quai 1/1000 & boss 1/20, moi proc 1-3 vien.
+    // ID 2039 da danh cho HOP_QUA_TET_2023 trong ConstItem.
+    public static final short ITEM_TIEN_DUYEN = 2040;
     public static final int TIEN_DUYEN_HOC_TU_TIEN   = 150; // can 150 tien duyen de hoc Tu Tien
     public static final int TIEN_DUYEN_HOC_LUYEN_DAN = 100; // can 100 tien duyen de hoc Luyen Dan
     public static final int LUYEN_DAN_REQ_TANG       = 4;   // + phai dat Luyen Khi Tang 4 moi hoc Luyen Dan
@@ -226,7 +227,7 @@ public class TuTienService {
             sendAll(pl);
             return;
         }
-        // M9 Gate: can TIEN_DUYEN_HOC_TU_TIEN Tien Duyen (item 2039, roi tu quai/boss) de hoc tu tien
+        // M9 Gate: can TIEN_DUYEN_HOC_TU_TIEN Tien Duyen (item 2040, roi tu quai/boss) de hoc tu tien
         int tdHave = countMaterial(pl, ITEM_TIEN_DUYEN);
         if (tdHave < TIEN_DUYEN_HOC_TU_TIEN) {
             Service.gI().sendThongBao(pl, "Can " + TIEN_DUYEN_HOC_TU_TIEN + " Tien Duyen de hoc Tu Tien (hien co "
@@ -1352,7 +1353,7 @@ public class TuTienService {
     }
 
     // ── Gui data: action 0 = client MO panel, 1 = chi cap nhat (khong mo) ─────
-    // M9: roll & roi Tien Duyen (item 2039) duoi dat khi giet quai/boss. chanceOneIn = 1000 (quai) | 20 (boss).
+    // M9: roll & roi Tien Duyen (item 2040) duoi dat khi giet quai/boss. chanceOneIn = 1000 (quai) | 20 (boss).
     // Drop duoi dat (ItemMap) giong Linh Thach boss; nhat len duoc 1-3 vien. Owner = killer.
     public void rollDropTienDuyen(map.Zone zone, int x, int y, long ownerId, int chanceOneIn) {
         if (zone == null || chanceOneIn <= 0) {

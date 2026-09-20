@@ -231,7 +231,7 @@ public class Command {
                     tutien.TuTienService.gI().sendAlchemyData(player);
                     Service.gI().sendThongBao(player, "Đã nạp lại " + tutien.DanPhuongTemplate.size() + " đan phương");
                 } else if (arg.startsWith("td")) {
-                    // tutien td [qty] -> nhan Tien Duyen (item 2039); mac dinh 150 (du hoc tu tien)
+                    // tutien td [qty] -> nhan Tien Duyen (item 2040); mac dinh 150 (du hoc tu tien)
                     try {
                         String s = arg.substring(2).trim();
                         int qty = s.isEmpty() ? tutien.TuTienService.TIEN_DUYEN_HOC_TU_TIEN : Integer.parseInt(s);
@@ -241,7 +241,7 @@ public class Command {
                             services.InventoryService.gI().sendItemBag(player);
                             Service.gI().sendThongBao(player, "Da nhan " + qty + " " + it.template.name);
                         } else {
-                            Service.gI().sendThongBao(player, "Chua co item 2039 (chay migration_m9_tien_duyen.sql)");
+                            Service.gI().sendThongBao(player, "Chua co item 2040 (chay migration_m9_tien_duyen.sql)");
                         }
                     } catch (Exception e) {
                     }

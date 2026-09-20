@@ -862,7 +862,10 @@ public class ItemService {
             type = 2; // giay
         }
 
-        return items[type][gender][Util.nextInt(1)];
+        // Each equipment slot has a normal and an alternate template.  The
+        // upper bound is exclusive, so nextInt(1) always returned 0 and made
+        // the second template impossible to obtain.
+        return items[type][gender][Util.nextInt(items[type][gender].length)];
     }
 
     public int[] randOptionItemKichHoat(int gender) {

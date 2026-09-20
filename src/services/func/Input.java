@@ -276,49 +276,10 @@ public class Input {
                 }
                 break;
                 case GIVE_IT:
-                    String name = text[0];
-                    int id = Integer.parseInt(text[1]);
-                    int op = Integer.parseInt(text[2]);
-                    int pr = Integer.parseInt(text[3]);
-                    int q = Integer.parseInt(text[4]);
-
-                    if (Client.gI().getPlayer(name) != null) {
-                        Item item = ItemService.gI().createNewItem(((short) id));
-                        List<Item.ItemOption> ops = ItemService.gI().getListOptionItemShop((short) id);
-                        if (!ops.isEmpty()) {
-                            item.itemOptions = ops;
-                        }
-                        item.quantity = q;
-                        item.itemOptions.add(new Item.ItemOption(op, pr));
-                        InventoryService.gI().addItemBag(Client.gI().getPlayer(name), item);
-                        InventoryService.gI().sendItemBag(Client.gI().getPlayer(name));
-                        Service.gI().sendThongBao(Client.gI().getPlayer(name), "Nhận " + item.template.name + " từ " + player.name);
-
-                    } else {
-                        Service.gI().sendThongBao(player, "Không online");
-                    }
+                    giveAdminItem(player, text, true);
                     break;
                 case GET_IT:
-                    id = Integer.parseInt(text[0]);
-                    op = Integer.parseInt(text[1]);
-                    pr = Integer.parseInt(text[2]);
-                    q = Integer.parseInt(text[3]);
-
-                    if (player.isAdmin()) {
-                        Item item = ItemService.gI().createNewItem(((short) id));
-                        List<Item.ItemOption> ops = ItemService.gI().getListOptionItemShop((short) id);
-                        if (!ops.isEmpty()) {
-                            item.itemOptions = ops;
-                        }
-                        item.quantity = q;
-                        item.itemOptions.add(new Item.ItemOption(op, pr));
-                        InventoryService.gI().addItemBag(player, item);
-                        InventoryService.gI().sendItemBag(player);
-                        Service.gI().sendThongBao(player, "Nhận " + item.template.name + " !");
-
-                    } else {
-                        Service.gI().sendThongBao(player, "Không đủ quyền hạn!");
-                    }
+                    giveAdminItem(player, text, false);
                     break;
                 case CHANGE_PASSWORD:
                     Service.gI().changePassword(player, text[0], text[1], text[2]);
@@ -561,11 +522,71 @@ public class Input {
     }
 
     public void createFormGiveItem(Player pl) {
-        createForm(pl, GIVE_IT, "Tặng vật phẩm", new SubInput("Tên", ANY), new SubInput("Id Item", ANY), new SubInput("ID OPTION", ANY), new SubInput("PARAM", ANY), new SubInput("Số lượng", ANY));
+        createForm(pl, GIVE_IT, "Tặng vật phẩm", new SubInput("Tên", ANY), new SubInput("Id Item", ANY),
+                new SubInput("Options: 1-20;5-20;36-20", ANY), new SubInput("Số lượng", NUMERIC));
     }
 
     public void createFormGetItem(Player pl) {
-        createForm(pl, GET_IT, "Get vật phẩm", new SubInput("Id Item", ANY), new SubInput("ID OPTION", ANY), new SubInput("PARAM", ANY), new SubInput("Số lượng", ANY));
+        createForm(pl, GET_IT, "Get vật phẩm", new SubInput("Id Item", ANY),
+                new SubInput("Options: 1-20;5-20;36-20", ANY), new SubInput("Số lượng", NUMERIC));
+    }
+
+    private void giveAdminItem(Player admin, String[] text, boolean toOtherPlayer) {
+        if (!admin.isAdmin()) {
+            Service.gI().sendThongBao(admin, "Không đủ quyền hạn!");
+            return;
+        }
+        int offset = toOtherPlayer ? 1 : 0;
+        if (text.length != offset + 3) {
+            Service.gI().sendThongBao(admin, "Hãy đóng và mở lại bảng buff vật phẩm.");
+            return;
+        }
+        try {
+            int id = Integer.parseInt(text[offset].trim());
+            int quantity = Integer.parseInt(text[offset + 2].trim());
+            if (id < 0 || id > Short.MAX_VALUE || id >= Manager.ITEM_TEMPLATES.size()) {
+                throw new IllegalArgumentException("Mã vật phẩm không hợp lệ");
+            }
+            if (quantity <= 0) {
+                throw new IllegalArgumentException("Số lượng phải lớn hơn 0");
+            }
+            Map<Integer, Integer> options = AdminItemOptions.parse(text[offset + 1]);
+            for (int optionId : options.keySet()) {
+                if (optionId >= Manager.ITEM_OPTION_TEMPLATES.size()) {
+                    throw new IllegalArgumentException("ID option không tồn tại: " + optionId);
+                }
+            }
+            Player receiver = toOtherPlayer ? Client.gI().getPlayer(text[0].trim()) : admin;
+            if (receiver == null) {
+                throw new IllegalArgumentException("Người nhận không online");
+            }
+            Item item = ItemService.gI().createNewItem((short) id);
+            List<Item.ItemOption> defaults = ItemService.gI().getListOptionItemShop((short) id);
+            if (!defaults.isEmpty()) {
+                item.itemOptions = new java.util.ArrayList<>(defaults);
+            }
+            // Explicit values replace matching defaults, avoiding duplicate stats.
+            item.itemOptions.removeIf(option -> options.containsKey(option.optionTemplate.id));
+            for (Map.Entry<Integer, Integer> option : options.entrySet()) {
+                item.itemOptions.add(new Item.ItemOption(option.getKey(), option.getValue()));
+            }
+            item.quantity = quantity;
+            String itemName = item.template.name;
+            boolean added = InventoryService.gI().addItemBag(receiver, item);
+            InventoryService.gI().sendItemBag(receiver);
+            if (!added) {
+                Service.gI().sendThongBao(admin, "Không thể thêm đủ vật phẩm. Kiểm tra túi đồ và giới hạn vật phẩm.");
+                return;
+            }
+            Service.gI().sendThongBao(receiver, "Nhận " + itemName + " từ " + admin.name);
+            if (receiver != admin) {
+                Service.gI().sendThongBao(admin, "Đã tặng " + itemName + " cho " + receiver.name);
+            }
+        } catch (NumberFormatException e) {
+            Service.gI().sendThongBao(admin, "ID vật phẩm và số lượng phải là số nguyên hợp lệ.");
+        } catch (IllegalArgumentException e) {
+            Service.gI().sendThongBao(admin, e.getMessage());
+        }
     }
 
     public void createFormGiftCode(Player pl) {

@@ -1653,7 +1653,12 @@ public class Service {
             try {
                 msg = new Message(-107);
                 msg.writer().writeByte(2);
-                msg.writer().writeShort(pl.pet.getAvatar());
+                // The client reads the pet's complete appearance before the
+                // equipment array. Sending only the avatar shifts every
+                // following field and leaves the pet panel with zero stats.
+                msg.writer().writeShort(pl.pet.getHead());
+                msg.writer().writeShort(pl.pet.getBody());
+                msg.writer().writeShort(pl.pet.getLeg());
                 msg.writer().writeByte(pl.pet.inventory.itemsBody.size());
 
                 for (Item item : pl.pet.inventory.itemsBody) {

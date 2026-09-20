@@ -6,7 +6,7 @@
 -- TYPE 27 = item tieu hao (giong Linh Thach); "dung" chi hien thong bao huong dan, KHONG tieu (UseItem case 2039).
 -- can_trade = 0 (bind tai khoan). LUU Y: server nay KHONG doc cot can_trade -> chan trade THAT o
 --   Trade.isItemCannotTran (hardcode theo ITEM_TIEN_DUYEN). Cot nay chi de tai lieu/tuong thich.
--- Re-runnable (ON DUPLICATE KEY UPDATE). Chay:  mysql -u root -p tomahoc_db < migration_m9_tien_duyen.sql
+-- Re-runnable (ON DUPLICATE KEY UPDATE). Chay: mysql --protocol=socket -u root nro_tien_ma < sql/migration_m9_tien_duyen.sql
 -- ID 2039 da duoc ConstItem dat cho HOP_QUA_TET_2023, nen Tien Duyen dung ID 2040.
 -- Verify: SELECT id,NAME,icon_id,TYPE,is_up_to_up FROM item_template WHERE id=2040;
 

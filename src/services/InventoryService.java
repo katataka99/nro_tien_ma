@@ -17,6 +17,10 @@ import models.BlackBallWar.BlackBallWarService;
 
 public class InventoryService {
 
+    private static final short LUNAR_EVENT_ITEM_MIN_ID = 1214;
+    private static final short LUNAR_EVENT_ITEM_MAX_ID = 1219;
+    private static final int MAX_STACK_QUANTITY = 9999;
+
     private static InventoryService I;
 
     public static InventoryService gI() {
@@ -542,6 +546,7 @@ public class InventoryService {
     }
 
     public void sendItemBag(Player player) {
+        mergeEventItemStacks(player.inventory.itemsBag);
         sortItems(player.inventory.itemsBag);
         Message msg;
         try {
@@ -792,6 +797,10 @@ public class InventoryService {
             itemAdd.itemOptions.add(new Item.ItemOption(73, 0));
         }
 
+        // Một số vật phẩm sự kiện cũ bị cấu hình is_up_to_up = 0 trong DB,
+        // khiến mỗi lần nhặt lại chiếm một ô mới. Gom các chồng cũ trước khi thêm.
+        mergeEventItemStacks(items);
+
         // item cộng thêm chỉ số param: tự động luyện tập - bí kiếp
         int[] idParam = isItemIncrementalOption(itemAdd);
         if (idParam[0] != -1) {
@@ -809,7 +818,7 @@ public class InventoryService {
         }
 
         // item tăng số lượng
-        if (itemAdd.template.isUpToUp) {
+        if (isStackableItem(itemAdd)) {
             for (Item it : items) {
                 if (!it.isNotNullItem() || it.template.id != itemAdd.template.id
                         || (!checkListsEqual(it.itemOptions, itemAdd.itemOptions) && itemAdd.template.id != 2074
@@ -825,14 +834,14 @@ public class InventoryService {
                     return true;
                 }
 
-                if (it.quantity < 9999) {
-                    int add = 9999 - it.quantity;
+                if (it.quantity < MAX_STACK_QUANTITY) {
+                    int add = MAX_STACK_QUANTITY - it.quantity;
                     if (itemAdd.quantity <= add) {
                         it.quantity += itemAdd.quantity;
                         itemAdd.quantity = 0;
                         return true;
                     } else {
-                        it.quantity = 9999;
+                        it.quantity = MAX_STACK_QUANTITY;
                         itemAdd.quantity -= add;
                     }
                 }
@@ -850,6 +859,41 @@ public class InventoryService {
             }
         }
         return false;
+    }
+
+    private boolean isStackableItem(Item item) {
+        return item != null && item.isNotNullItem()
+                && (item.template.isUpToUp || isLunarEventItem(item));
+    }
+
+    private boolean isLunarEventItem(Item item) {
+        return item.template.id >= LUNAR_EVENT_ITEM_MIN_ID
+                && item.template.id <= LUNAR_EVENT_ITEM_MAX_ID;
+    }
+
+    private void mergeEventItemStacks(List<Item> items) {
+        for (int i = 0; i < items.size(); i++) {
+            Item target = items.get(i);
+            if (!target.isNotNullItem() || !isLunarEventItem(target)) {
+                continue;
+            }
+
+            for (int j = i + 1; j < items.size() && target.quantity < MAX_STACK_QUANTITY; j++) {
+                Item duplicate = items.get(j);
+                if (!duplicate.isNotNullItem()
+                        || duplicate.template.id != target.template.id
+                        || !checkListsEqual(target.itemOptions, duplicate.itemOptions)) {
+                    continue;
+                }
+
+                int moved = Math.min(MAX_STACK_QUANTITY - target.quantity, duplicate.quantity);
+                target.quantity += moved;
+                duplicate.quantity -= moved;
+                if (duplicate.quantity <= 0) {
+                    items.set(j, ItemService.gI().createItemNull());
+                }
+            }
+        }
     }
 
     public static boolean checkListsEqual(List<ItemOption> list1, List<ItemOption> list2) {

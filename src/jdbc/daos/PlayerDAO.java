@@ -1298,11 +1298,63 @@ public class PlayerDAO {
             ps.setInt(1, num);
             ps.setInt(2, num);
             ps.setInt(3, id);
-            ps.executeUpdate();
-            return true;
+            return ps.executeUpdate() > 0;
         } catch (SQLException e) {
             Logger.error(" Lỗi của EMTI ở hàm addcash");
             return false;
+        }
+    }
+
+    public static CashUpdateResult addCashByPlayerId(int playerId, int amount) {
+        if (playerId <= 0 || amount <= 0) {
+            return null;
+        }
+        String updateQuery = "UPDATE account a JOIN player p ON p.account_id = a.id "
+                + "SET a.cash = a.cash + ?, a.danap = a.danap + ? "
+                + "WHERE p.id = ? AND a.cash <= ? AND a.danap <= ?";
+        String selectQuery = "SELECT a.cash, a.danap FROM account a "
+                + "JOIN player p ON p.account_id = a.id WHERE p.id = ?";
+        try (Connection con = DBConnecter.getConnectionServer()) {
+            con.setAutoCommit(false);
+            try (PreparedStatement update = con.prepareStatement(updateQuery)) {
+                update.setInt(1, amount);
+                update.setInt(2, amount);
+                update.setInt(3, playerId);
+                update.setInt(4, Integer.MAX_VALUE - amount);
+                update.setInt(5, Integer.MAX_VALUE - amount);
+                if (update.executeUpdate() == 0) {
+                    con.rollback();
+                    return null;
+                }
+            }
+            try (PreparedStatement select = con.prepareStatement(selectQuery)) {
+                select.setInt(1, playerId);
+                try (java.sql.ResultSet rs = select.executeQuery()) {
+                    if (!rs.next()) {
+                        con.rollback();
+                        return null;
+                    }
+                    CashUpdateResult result = new CashUpdateResult(rs.getInt("cash"), rs.getInt("danap"));
+                    con.commit();
+                    return result;
+                }
+            } catch (SQLException e) {
+                con.rollback();
+                throw e;
+            }
+        } catch (SQLException e) {
+            Logger.logException(PlayerDAO.class, e, "Error adding cash by player ID " + playerId);
+            return null;
+        }
+    }
+
+    public static final class CashUpdateResult {
+        public final int cash;
+        public final int danap;
+
+        public CashUpdateResult(int cash, int danap) {
+            this.cash = cash;
+            this.danap = danap;
         }
     }
 

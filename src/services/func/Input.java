@@ -189,18 +189,35 @@ public class Input {
                 }
                 case BUFFVND: {
                     try {
-                        int idacc = Integer.parseInt(text[0].trim());
-                        int addcash = Integer.parseInt(text[1].trim());
-                        if (PlayerDAO.addcash(idacc, addcash)) {
-                            Service.gI().sendThongBao(player, "Bạn đã buff cho " + idacc + " " + addcash + " VNĐ");
-                            if (Client.gI().getPlayerByUser(idacc) != null) {
-                                Client.gI().getPlayerByUser(idacc).getSession().cash += addcash;
-                                Service.gI().sendThongBao(Client.gI().getPlayerByUser(idacc), "Bạn vừa được cộng " + addcash + "COIN bởi " + player.name);
-                            }
+                        if (!player.isAdmin()) {
+                            Service.gI().sendThongBaoOK(player, "Không đủ quyền hạn!");
+                            break;
                         }
+                        int playerId = Integer.parseInt(text[0].trim());
+                        int amount = Integer.parseInt(text[1].trim());
+                        if (playerId <= 0 || amount <= 0) {
+                            Service.gI().sendThongBaoOK(player, "ID player và số VNĐ phải lớn hơn 0.");
+                            break;
+                        }
+                        PlayerDAO.CashUpdateResult result = PlayerDAO.addCashByPlayerId(playerId, amount);
+                        if (result == null) {
+                            Service.gI().sendThongBaoOK(player,
+                                    "Không tìm thấy ID player hoặc số dư vượt giới hạn.");
+                            break;
+                        }
+                        Player receiver = Client.gI().getPlayer(playerId);
+                        if (receiver != null && receiver.getSession() != null) {
+                            receiver.getSession().cash = result.cash;
+                            receiver.getSession().danap = result.danap;
+                            Service.gI().sendThongBaoOK(receiver,
+                                    "Bạn vừa được cộng " + amount + " VNĐ bởi " + player.name
+                                            + ".\nSố dư hiện tại: " + result.cash + " VNĐ");
+                        }
+                        Service.gI().sendThongBaoOK(player,
+                                "Đã buff " + amount + " VNĐ cho player ID " + playerId
+                                        + ".\nSố dư mới: " + result.cash + " VNĐ");
                     } catch (Exception e) {
-                        e.printStackTrace();
-                        Service.gI().sendThongBao(player, "Đã có lỗi xảy ra");
+                        Service.gI().sendThongBaoOK(player, "ID player và số VNĐ phải là số nguyên hợp lệ.");
                     }
                     break;
                 }
@@ -683,8 +700,8 @@ public class Input {
 
     public void createFormBuffVND(Player player) {
         createForm(player, BUFFVND, "Buff VNĐ",
-                new SubInput("id acc người chơi", NUMERIC),
-                new SubInput("VNĐ CẦN BUFF", ANY));
+                new SubInput("ID player (chat: id)", NUMERIC),
+                new SubInput("VNĐ CẦN BUFF", NUMERIC));
     }
 
     public static class SubInput {

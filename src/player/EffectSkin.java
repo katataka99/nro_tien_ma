@@ -211,28 +211,26 @@ public class EffectSkin {
                             if (mob.point.gethp() > 1) {
                                 if (Util.getDistance(this.player, mob) <= 200) {
                                     long subHp = Util.maxIntValue(mob.point.getHpFull() * param / 100);
-                                    if (subHp >= mob.point.gethp()) {
-                                        subHp = mob.point.gethp() - 1;
-                                    }
-                                    hpHut += subHp;
+                                    subHp = Math.min(subHp, Math.max(0, mob.point.gethp() - 1));
+                                    long hpBefore = mob.point.gethp();
                                     mob.injured(null, subHp, false);
+                                    hpHut += Math.max(0, hpBefore - mob.point.gethp());
                                 }
                             }
                         }
                         for (Player pl : players) {
                             long subHp = Util.maxIntValue((long) pl.nPoint.hpMax * param / 100);
                             long subMp = Util.maxIntValue((long) pl.nPoint.mpMax * param / 100);
-                            if (subHp >= pl.nPoint.hp) {
-                                subHp = pl.nPoint.hp - 1;
-                            }
-                            if (subMp >= pl.nPoint.mp) {
-                                subMp = pl.nPoint.mp - 1;
-                            }
-                            hpHut += subHp;
-                            mpHut += subMp;
+                            subHp = Math.min(subHp, Math.max(0, pl.nPoint.hp - 1));
+                            subMp = Math.min(subMp, Math.max(0, pl.nPoint.mp - 1));
+                            long hpBefore = pl.nPoint.hp;
+                            long mpBefore = pl.nPoint.mp;
+                            pl.injured(null, subHp, true, false);
+                            pl.nPoint.subMP(subMp);
+                            hpHut += Math.max(0, hpBefore - pl.nPoint.hp);
+                            mpHut += Math.max(0, mpBefore - pl.nPoint.mp);
                             PlayerService.gI().sendInfoHpMpMoney(pl);
                             Service.gI().Send_Info_NV(pl);
-                            pl.injured(null, subHp, true, false);
                         }
                         this.player.nPoint.addHp(hpHut);
                         this.player.nPoint.addMp(mpHut);

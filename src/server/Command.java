@@ -61,6 +61,11 @@ public class Command {
             Service.gI().sendThongBaoOK(player, "ID nhân vật của bạn: " + player.id);
             return true;
         }
+        if (text.equalsIgnoreCase("dn")) {
+            int cash = player.getSession() != null ? player.getSession().cash : 0;
+            Service.gI().sendThongBaoOK(player, "Bạn đang có: " + cash + " VNĐ");
+            return true;
+        }
         if (text.equalsIgnoreCase("tutien")) {
             // mo panel; tu gate "gap Quy Lao" neu chua kich hoat
             tutien.TuTienService.gI().handleAction(player, 0);

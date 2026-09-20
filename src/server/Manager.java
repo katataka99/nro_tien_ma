@@ -1272,6 +1272,7 @@ public final class Manager {
     public void loadProperties() throws IOException {
         Properties properties = new Properties();
         properties.load(new FileInputStream("data/config/config.properties"));
+        AutoMaintenance.configure(properties);
         Object value;
         if ((value = properties.get("server.sv")) != null) {
             SERVER = Byte.parseByte(String.valueOf(value));

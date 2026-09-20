@@ -38,9 +38,11 @@ ss -ltnp 'sport = :14445'
 
 systemd tu khoi dong sau reboot/thoat process; systemctl stop dung han. SIGTERM dong socket, luu player/clan/event va doi DB write dang chay toi da 60 giay. Service cho toi da 120 giay. Loi database/config tra exit code 1. Sau 5 lan loi trong 5 phut, sua nguyen nhan roi chay `systemctl reset-failed nro-tien-ma` va start lai.
 
+Lich bao tri headless doc `server.autorestart`, `server.maintenance.hour` va `server.maintenance.min` trong `data/config/config.properties`. Khi bat, server thong bao truoc 60 giay, luu du lieu, thoat an toan; systemd khoi dong lai sau 10 giay. Gio chay theo `Asia/Ho_Chi_Minh` trong `run.sh`.
+
 Heap mac dinh 256 MB–2 GB, chua tinh native memory/threads/MySQL. Sua `/etc/default/nro-tien-ma` (JAVA_BIN, JAVA_XMS, JAVA_XMX) roi restart. Installer chon Java 17 rieng neu co. Chi quan ly dich vu nro-tien-ma de khong anh huong cac game Java khac.
 
-`bash run.sh` chay foreground de chan doan; khong chay dong thoi voi service tren cung port. Cac khoa lich bao tri dashboard khong kich hoat lich GUI khi chay headless.
+`bash run.sh` chay foreground de chan doan; khong chay dong thoi voi service tren cung port. Lich bao tri trong config hoat dong ca khi server chay headless.
 
 ## Database/config thu cong hoac database da co
 

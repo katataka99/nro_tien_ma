@@ -23,9 +23,9 @@ database.min=10
 database.max=30
 database.lifetime=300000
 
-# DASHBOARD AUTOGEN
-server.maintenance.hour=16
-server.maintenance.min=24
+# DAILY MAINTENANCE (Asia/Ho_Chi_Minh)
+server.maintenance.hour=4
+server.maintenance.min=0
 server.autorestart=true
 
 # SỰ KIỆN

@@ -444,11 +444,13 @@ public class Command {
                 if (parts.length >= 3) {
                     short id = Short.parseShort(parts[1]);
                     int quantity = Integer.parseInt(parts[2]);
-                    if (id < 0 || id >= Manager.ITEM_TEMPLATES.size()) {
+                    Item item = ItemService.gI().createNewItem(id, quantity);
+                    // Item IDs are not guaranteed to be contiguous. Validate the
+                    // actual template instead of comparing against the list size.
+                    if (id < 0 || item == null || item.template == null) {
                         Service.gI().sendThongBao(player, "Mã vật phẩm không hợp lệ");
                         return true;
                     }
-                    Item item = ItemService.gI().createNewItem(id, quantity);
                     List<Item.ItemOption> ops = ItemService.gI().getListOptionItemShop((short) id);
                     if (!ops.isEmpty()) {
                         item.itemOptions = ops;

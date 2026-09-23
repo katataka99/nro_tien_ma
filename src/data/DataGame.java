@@ -43,7 +43,9 @@ import models.Farm.CropTemplate;
 
 public class DataGame {
 
-    public static byte vsData = 9;
+    // Bump the data version when part rows/resources change so clients refresh
+    // their cached NR_part file instead of rendering stale part IDs.
+    public static byte vsData = 10;
     public static byte vsMap = 2;
     public static byte vsSkill = 1;
     public static byte vsItem = 9; // Tăng vì thay đổi format - thêm flag isLastBatch

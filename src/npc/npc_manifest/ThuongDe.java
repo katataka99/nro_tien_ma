@@ -128,7 +128,9 @@ public class ThuongDe extends Npc {
                                                         - InventoryService.gI().getCountEmptyListItem(
                                                                 player.inventory.itemsBoxCrackBall))
                                                 + " món)",
-                                        "Xóa hết\ntrong rương");
+                                        "Xóa hết\ntrong rương",
+                                        "Xem\nBXH",
+                                        "Nhận quà\ntích lũy");
                         }
                     } else if (player.iDMark.getIndexMenu() == 2001) {
                         switch (select) {

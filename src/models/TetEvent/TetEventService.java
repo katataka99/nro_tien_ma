@@ -148,4 +148,43 @@ public class TetEventService {
             Service.gI().sendThongBao(pl, "Bạn nhận được " + gem + " ngọc xanh");
         }
     }
+
+    /**
+     * Dùng thiệp chúc Tết để nhận lượt/điểm sự kiện Tết.
+     *
+     * Một số bản dữ liệu cũ đặt tên các item 1191-1193 khác nhau, nhưng vẫn
+     * dùng cùng icon thiệp. Giữ việc phân loại theo id ở đây để tất cả các bản
+     * item đều đi qua một luồng xử lý và không còn rơi vào "mã vật phẩm không
+     * hợp lệ".
+     */
+    public void useThiepChucTet(Player pl, Item item) {
+        if (!EventConfig.LUNAR_NEW_YEAR) {
+            Service.gI().sendThongBao(pl, "Sự kiện Tết đã kết thúc");
+            return;
+        }
+        if (item == null || !item.isNotNullItem()) {
+            return;
+        }
+
+        int points;
+        switch (item.template.id) {
+            case 1193:
+            case 1377:
+                points = 10;
+                break;
+            case 1192:
+            case 1376:
+                points = 5;
+                break;
+            default:
+                points = 1;
+                break;
+        }
+
+        InventoryService.gI().subQuantityItemsBag(pl, item, 1);
+        pl.pointtet += points;
+        InventoryService.gI().sendItemBag(pl);
+        Service.gI().sendThongBao(pl,
+                "Bạn đã dùng thiệp chúc Tết và nhận " + points + " điểm sự kiện (tổng: " + pl.pointtet + ")");
+    }
 }

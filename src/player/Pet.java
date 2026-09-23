@@ -87,6 +87,10 @@ public class Pet extends Player {
     public Pet(Player master) {
         this.master = master;
         this.isPet = true;
+        // Đệ tử mới phải có ít nhất một bậc giới hạn để buff riêng có thể
+        // nâng cấp. Dữ liệu cũ vẫn được nạp lại từ DB trong NDVSqlFetcher.
+        this.nPoint.limitPower = 1;
+        this.nPoint.initPowerLimit();
     }
 
     public void changeStatus(byte status) {

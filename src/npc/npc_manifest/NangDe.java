@@ -269,8 +269,9 @@ public class NangDe extends Npc {
                          }
                          break;
                      case 2:
+                         int maxOption = Math.min(10, Math.max(1, player.pet.nPoint.limitPower + 1));
                          this.createOtherMenu(player, 891, "\b|7| Nâng cấp option sẽ tiêu tốn Tinh Thạch\n"
-                                 +"\b|5|Chỉ số tăng thêm hiện Tại "+ player.optde+"/"+(player.pet.nPoint.limitPower+1) +"%\n"
+                                 +"\b|5|Chỉ số tăng thêm hiện Tại "+ player.optde+"/"+maxOption +"%\n"
                                  +"\b|1| Cấp tiếp theo cần x"+(player.optde+1)*2+" Tinh thạch và thỏi vàng",
                                  "Tăng chỉ số","Đóng");
                          break;
@@ -281,6 +282,19 @@ public class NangDe extends Npc {
             } else if (player.iDMark.getIndexMenu() == 891) {
                   switch (select) {
                       case 0:
+                          if (player.pet == null) {
+                              Service.gI().sendThongBao(player, "Cần có đệ tử để nâng buff riêng");
+                              return;
+                          }
+                          // Menu hiển thị giới hạn là limitPower + 1, nhưng
+                          // code cũ lại chặn ở limitPower nên cấp cuối không
+                          // bao giờ nâng được (đặc biệt khi limitPower = 0).
+                          int maxOption = Math.min(10, Math.max(1, player.pet.nPoint.limitPower + 1));
+                          if (player.optde >= maxOption) {
+                              Service.gI().sendThongBao(player,
+                                      "Đã đạt cấp tối đa (" + maxOption + "%), hãy mở thêm giới hạn sức mạnh cho đệ tử");
+                              return;
+                          }
                           int sl =(player.optde+1)*2;
                           Item tv = InventoryService.gI().findItemBag(player, 457);
                           Item dancde = InventoryService.gI().findItemBag(player, 1823);
@@ -292,15 +306,13 @@ public class NangDe extends Npc {
                             Service.gI().sendThongBao(player, "Cần Tinh Thạch để nâng option");
                             return;
                         }
-                        if(player.optde>=player.pet.nPoint.limitPower){
-                            Service.gI().sendThongBao(player, "Đã đạt cấp tối đa, hãy up đệ thêm để mở thêm giới hạn");
-                            return;
-                        }
                         player.optde++;
                          Service.gI().sendThongBao(player, "Nâng cấp thành công");
                          InventoryService.gI().subQuantityItemsBag(player, tv, sl);
                             InventoryService.gI().subQuantityItemsBag(player, dancde, sl);
                             InventoryService.gI().sendItemBag(player);
+                            Service.gI().point(player.pet);
+                            Service.gI().point(player);
                         
                         break;
                          
@@ -312,6 +324,8 @@ public class NangDe extends Npc {
                      
                      case 0:
                          player.choice = 1;
+                         Service.gI().point(player.pet);
+                         Service.gI().point(player);
                          if(player.pet.typePet==3){
                              Service.gI().sendThongBao(player, "\b|7| Đổi thành công Option 1 tăng Sát thương đấm galick");
                          }else if(player.pet.typePet==4){
@@ -322,6 +336,8 @@ public class NangDe extends Npc {
                          break;
                      case 1:
                          player.choice = 2;
+                         Service.gI().point(player.pet);
+                         Service.gI().point(player);
                          if(player.pet.typePet==3){
                              Service.gI().sendThongBao(player, "\b|5| Đổi thành công Option 2 tăng HP,SĐ khi biến khỉ");
                          }else if(player.pet.typePet==4){
@@ -332,6 +348,8 @@ public class NangDe extends Npc {
                          break;
                      case 2:
                          player.choice = 3;
+                         Service.gI().point(player.pet);
+                         Service.gI().point(player);
                          if(player.pet.typePet==3){
                              Service.gI().sendThongBao(player, "\b|3| Đổi thành công Option 3 tăng  sát thương bom");
                          }else if(player.pet.typePet==4){

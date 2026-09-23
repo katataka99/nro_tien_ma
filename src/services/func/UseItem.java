@@ -658,11 +658,11 @@ public class UseItem {
                             // case 1623:
                             // TaskService.gI().sendNextTaskMain(pl);
                             // break;
-                            // case 1228:
-                            // NpcService.gI().createMenuConMeo(pl, ConstNpc.HOP_QUA_THAN_LINH, -1,
-                            // "Chọn hành tinh của đồ thần linh muốn nhận.",
-                            // "Trái đất", "Namek", "Xayda");
-                            // break;
+                            case 1228: // Hộp quà cao cấp
+                                NpcService.gI().createMenuConMeo(pl, ConstNpc.HOP_QUA_THAN_LINH, -1,
+                                        "Chọn hành tinh của đồ thần linh muốn nhận.",
+                                        "Trái đất", "Namek", "Xayda");
+                                break;
 
                             // case 1628: {
                             // Player player = pl;
@@ -848,6 +848,15 @@ public class UseItem {
                                 break;
                             case 1183: // Bao li xi
                                 models.TetEvent.TetEventService.gI().useBaoLiXi(pl, item);
+                                break;
+                            case 399: // Thiệp chúc Tết (bản cũ)
+                            case 1191:
+                            case 1192:
+                            case 1193:
+                            case 1375:
+                            case 1376:
+                            case 1377:
+                                models.TetEvent.TetEventService.gI().useThiepChucTet(pl, item);
                                 break;
                             case 1857: {
                                 if (InventoryService.gI().getCountEmptyBag(pl) == 0) {// thạch anh tím

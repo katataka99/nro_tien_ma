@@ -938,6 +938,12 @@ public class NDVSqlFetcher {
                 // data chỉ số
                 dataArray = (JSONArray) JSONValue.parse(String.valueOf(petData.get(1)));
                 pet.nPoint.limitPower = Byte.parseByte(String.valueOf(dataArray.get(0)));
+                // Một số bản ghi cũ lưu giới hạn đệ tử bằng 0 và chưa khởi tạo
+                // powerLimit, khiến buff riêng bị chặn ngay ở cấp đầu tiên.
+                if (pet.nPoint.limitPower < 1) {
+                    pet.nPoint.limitPower = 1;
+                }
+                pet.nPoint.initPowerLimit();
                 pet.nPoint.power = Long.parseLong(String.valueOf(dataArray.get(1)));
                 pet.nPoint.tiemNang = Long.parseLong(String.valueOf(dataArray.get(2)));
                 pet.nPoint.stamina = Short.parseShort(String.valueOf(dataArray.get(3)));

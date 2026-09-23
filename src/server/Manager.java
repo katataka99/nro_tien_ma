@@ -459,7 +459,7 @@ public final class Manager {
 
         try (Connection con = DBConnecter.getConnectionServer();) {
             // load part
-            ps = con.prepareStatement("select * from part");
+            ps = con.prepareStatement("select * from part ORDER BY id ASC");
             rs = ps.executeQuery();
             List<Part> parts = new ArrayList<>();
             while (rs.next()) {

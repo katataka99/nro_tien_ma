@@ -246,6 +246,14 @@ public class UseItem {
 
     private void useItem(Player pl, Item item, int indexBag) {
         if (item != null && item.isNotNullItem()) {
+            // Hộp quà cao cấp phải mở được dù template cũ trên database có type/yêu cầu
+            // sức mạnh khác với template hiện tại.
+            if (item.template.id == ConstItem.HOP_QUA_CAO_CAP) {
+                NpcService.gI().createMenuConMeo(pl, ConstNpc.HOP_QUA_THAN_LINH, -1,
+                        "Chọn hành tinh của đồ thần linh muốn nhận.",
+                        "Trái đất", "Namek", "Xayda");
+                return;
+            }
             if (item.template.id == 570) {
                 int time = (int) TimeUtil.diffDate(new Date(), new Date(item.createTime), TimeUtil.DAY);
                 if (time == 0) {
@@ -658,12 +666,6 @@ public class UseItem {
                             // case 1623:
                             // TaskService.gI().sendNextTaskMain(pl);
                             // break;
-                            case 1228: // Hộp quà cao cấp
-                                NpcService.gI().createMenuConMeo(pl, ConstNpc.HOP_QUA_THAN_LINH, -1,
-                                        "Chọn hành tinh của đồ thần linh muốn nhận.",
-                                        "Trái đất", "Namek", "Xayda");
-                                break;
-
                             // case 1628: {
                             // Player player = pl;
                             // if (player.pet != null) {
